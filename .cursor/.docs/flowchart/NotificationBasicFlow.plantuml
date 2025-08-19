@@ -1,0 +1,16 @@
+@startuml NotificationBasicFlow
+|User|
+start
+:Enter CreateNotificationCommand(cmd);
+|NotificationApplicationService|
+:createNotification(cmd);
+|NotificationScheduler|
+:schedule(cmd → Notification entity);
+|NotificationRepository|
+:save(Notification);
+|NotificationScheduler|
+:… scheduling logic …
+|NotificationApplicationService|
+:return Notification;
+stop
+@enduml

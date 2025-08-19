@@ -1,0 +1,34 @@
+@startuml NotificationUpdateFlow
+|User|
+start
+:Submit UpdateNotificationCommand(cmd);
+|NotificationApplicationService|
+:updateNotification(cmd);
+|NotificationRepository|
+:existing = findById(cmd.notificationId);
+if (existing exists and not deleted?) then (yes)
+  |Notification|
+  :existing.update(
+    message = cmd.message ?: existing.message,
+    schedule = cmd.startDateTime?/cmd.endDateTime?,
+    recurrence = cmd.recurrence ?: existing.recurrence,
+    active = cmd.isActive ?: existing.isActive
+  );
+  :existing.validateSchedule();
+  |NotificationRepository|
+  :save(existing);
+  |SchedulerService|
+  :rescheduleTask(
+    task = findTaskByNotificationId(existing.notificationId),
+    newNextRunAt = calculateNextRun(existing)
+  );
+  |ScheduleRepository|
+  :save(updatedTask);
+  |NotificationApplicationService|
+  :return existing;
+else (no)
+  |NotificationApplicationService|
+  :throw NotificationNotFoundException;
+endif
+stop
+@enduml

@@ -1,0 +1,59 @@
+@startuml UINavigationFlow
+|User|
+start
+:openApp();
+|ScreenController|
+:navigateTo(NOTIFICATION_LIST);
+|NotificationListComponent|
+:render(list of notifications);
+|User|
+:select notification;
+|ScreenController|
+:navigateTo(NOTIFICATION_DETAIL);
+|NotificationFormComponent|
+:render(notification details);
+|User|
+:click edit;
+|ScreenController|
+:navigateTo(CREATE_NOTIFICATION);
+|NotificationFormComponent|
+:render(empty form or prefilled data);
+|User|
+:submit form;
+|NotificationApplicationService|
+:create or update notification;
+|ScreenController|
+:navigateTo(NOTIFICATION_LIST);
+|NotificationListComponent|
+:refresh list;
+stop
+@enduml
+
+@startuml SettingsAndWidgetFlow
+|User|
+:start on SETTINGS;
+|ScreenController|
+:navigateTo(SETTINGS);
+|ThemeManager|
+:getCurrentSettings() → settings;
+|SettingsComponent|
+:render(settings);
+|User|
+:toggle dark mode;
+|ThemeManager|
+:applyTheme(DARK);
+|ThemeRepository|
+:saveSettings(settings);
+|ScreenController|
+:navigateTo(WIDGET_CONFIGURATION);
+|WidgetComponent|
+:render(widget configs);
+|User|
+:add new widget;
+|WidgetController|
+:loadWidgets(userId) → configs;
+|WidgetComponent|
+:show updated list;
+stop
+@enduml
+

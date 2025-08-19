@@ -1,0 +1,53 @@
+@startuml SynchronizationDomain
+
+!define SERVICE_COLOR #E8F5E8
+!define REPOSITORY_COLOR #FFF3E0
+!define ENTITY_COLOR #F1F8E9
+
+package "Synchronization Domain" {
+
+  class SyncService <<DomainService>> SERVICE_COLOR {
+    +syncNotifications(userId: String): void
+    +syncSettings(userId: String): void
+    +pushLocalChanges(userId: String): void
+    +pullRemoteChanges(userId: String): void
+    +resolveConflicts(userId: String, conflictData: List<Conflict>): void
+  }
+
+  interface SyncRepository <<Repository>> REPOSITORY_COLOR {
+    +saveNotificationSyncData(userId: String, data: NotificationSyncData): void
+    +getNotificationSyncData(userId: String): List<NotificationSyncData>
+    +saveSettingsSyncData(userId: String, data: SettingsSyncData): void
+    +getSettingsSyncData(userId: String): SettingsSyncData
+    +logConflict(conflict: Conflict): void
+  }
+
+  class NotificationSyncData <<ValueObject>> ENTITY_COLOR {
+    +notificationId: String
+    +lastModifiedAt: LocalDateTime
+    +isActive: Boolean
+    +isDeleted: Boolean
+  }
+
+  class SettingsSyncData <<ValueObject>> ENTITY_COLOR {
+    +userId: String
+    +preferences: Map<String, String>
+    +lastSyncedAt: LocalDateTime
+  }
+
+  class Conflict <<ValueObject>> ENTITY_COLOR {
+    +entityId: String
+    +entityType: String
+    +localData: Any
+    +remoteData: Any
+    +timestamp: LocalDateTime
+  }
+
+}
+
+' Relationships
+SyncService --> SyncRepository : uses
+SyncRepository ..> NotificationSyncData
+SyncRepository ..> SettingsSyncData
+SyncRepository ..> Conflict
+@enduml

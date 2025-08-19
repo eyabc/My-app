@@ -1,0 +1,44 @@
+@startuml QuickActionRegistrationFlow
+|User|
+start
+:open quick actions screen;
+|QuickActionService|
+:listActions(userId) → actions;
+|QuickActionRepository|
+:findByUserId(userId) → actions;
+|QuickActionComponent|
+:render(actions);
+|User|
+:enter new action details;
+|QuickActionController|
+:registerAction(cmd);
+|QuickActionService|
+:registerAction(new QuickAction(cmd));
+|QuickActionRepository|
+:save(newAction);
+|QuickActionService|
+:return success;
+|QuickActionController|
+:refresh list;
+|QuickActionRepository|
+:findByUserId(userId) → updatedActions;
+|QuickActionComponent|
+:render(updatedActions);
+stop
+@enduml
+
+@startuml QuickActionListingFlow
+|User|
+start
+:open quick actions screen;
+|QuickActionController|
+:loadActions(userId);
+|QuickActionService|
+:listActions(userId) → actions;
+|QuickActionRepository|
+:findByUserId(userId) → actions;
+|QuickActionComponent|
+:render(actions);
+stop
+@enduml
+

@@ -1,0 +1,85 @@
+@startuml VoiceCommandDomain
+
+!define ENTITY_COLOR #E8F5E9
+!define VALUE_OBJECT_COLOR #E1F5FE
+!define SERVICE_COLOR #E3F2FD
+!define REPOSITORY_COLOR #FFF3E0
+!define INFRA_COLOR #FFE0B2
+
+package "Voice Command Domain" {
+
+  entity VoiceCommand <<Entity>> ENTITY_COLOR {
+    -commandId: String
+    -userId: String
+    -rawText: String
+    -recognizedIntent: IntentType
+    -parameters: Map<String, String>
+    -receivedAt: LocalDateTime
+    -processed: Boolean
+    -success: Boolean
+    -errorMessage: String?
+    +markProcessed(success: Boolean, errorMessage: String?): void
+  }
+
+  enum IntentType <<Enum>> VALUE_OBJECT_COLOR {
+    ADD_NOTIFICATION
+    UPDATE_NOTIFICATION
+    DELETE_NOTIFICATION
+    LIST_NOTIFICATIONS
+    CONTROL_APP
+    OTHER
+  }
+
+  class VoiceCommandResult <<ValueObject>> VALUE_OBJECT_COLOR {
+    +commandId: String
+    +status: CommandStatus
+    +resultData: Map<String, String>
+    +processedAt: LocalDateTime
+  }
+
+  enum CommandStatus <<Enum>> VALUE_OBJECT_COLOR {
+    SUCCESS
+    FAILURE
+    AMBIGUOUS
+  }
+
+  interface VoiceCommandRepository <<Repository>> REPOSITORY_COLOR {
+    +save(command: VoiceCommand): VoiceCommand
+    +findByUserId(userId: String): List<VoiceCommand>
+    +findUnprocessedCommands(): List<VoiceCommand>
+    +findByIntent(intent: IntentType, start: LocalDateTime, end: LocalDateTime): List<VoiceCommand>
+  }
+
+  class SpeechRecognitionService <<DomainService>> SERVICE_COLOR {
+    +startRecognitionSession(): void
+    +stopRecognitionSession(): void
+    +recognize(audioData: Byte[]): String
+  }
+
+  class VoiceCommandProcessor <<DomainService>> SERVICE_COLOR {
+    +process(rawText: String, userId: String): VoiceCommandResult
+    +parseIntent(rawText: String): IntentType
+    +extractParameters(rawText: String): Map<String, String>
+  }
+
+  class VoiceCommandApplicationService <<ApplicationService>> SERVICE_COLOR {
+    -speechService: SpeechRecognitionService
+    -processor: VoiceCommandProcessor
+    -repository: VoiceCommandRepository
+    +handleIncomingVoice(userId: String, audioData: Byte[]): VoiceCommandResult
+    +getUserVoiceCommands(userId: String, start: LocalDateTime, end: LocalDateTime): List<VoiceCommand>
+    +getVoiceCommandStats(userId: String, start: LocalDateTime, end: LocalDateTime): Map<IntentType, Integer>
+  }
+
+}
+
+' Relationships
+VoiceCommandProcessor --> VoiceCommandRepository : uses
+VoiceCommandApplicationService --> SpeechRecognitionService : uses
+VoiceCommandApplicationService --> VoiceCommandProcessor : uses
+VoiceCommandApplicationService --> VoiceCommandRepository : uses
+VoiceCommand *-- VoiceCommandResult
+VoiceCommand --> IntentType
+VoiceCommandResult --> CommandStatus
+
+@enduml

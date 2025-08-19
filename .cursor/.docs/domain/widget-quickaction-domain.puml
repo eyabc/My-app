@@ -1,0 +1,79 @@
+@startuml WidgetQuickActionDomain
+
+!define CONTROLLER_COLOR #E8EAF6
+!define SERVICE_COLOR #E8F5E8
+!define REPOSITORY_COLOR #FFF3E0
+!define COMPONENT_COLOR #F3E5F5
+
+package "Widget & Quick Action Domain" {
+
+  class WidgetController <<Controller>> CONTROLLER_COLOR {
+    -widgetConfigs: List<WidgetConfig>
+    +loadWidgets(userId: String): List<WidgetConfig>
+    +updateWidgetConfig(config: WidgetConfig): void
+    +refreshWidget(widgetId: String): void
+    +deleteWidget(widgetId: String): void
+  }
+
+  class WidgetConfig <<ValueObject>> COMPONENT_COLOR {
+    +widgetId: String
+    +userId: String
+    +displayText: String
+    +refreshInterval: Duration
+    +layoutType: LayoutType
+  }
+
+  enum LayoutType <<Enum>> COMPONENT_COLOR {
+    COMPACT
+    EXPANDED
+    CUSTOM
+  }
+
+  interface WidgetRepository <<Repository>> REPOSITORY_COLOR {
+    +findByUserId(userId: String): List<WidgetConfig>
+    +save(config: WidgetConfig): void
+    +delete(widgetId: String): void
+  }
+
+  class QuickActionService <<DomainService>> SERVICE_COLOR {
+    +registerAction(action: QuickAction): void
+    +executeAction(actionId: String, params: Map<String, String>): QuickActionResult
+    +listActions(userId: String): List<QuickAction>
+  }
+
+  class QuickAction <<Entity>> COMPONENT_COLOR {
+    -actionId: String
+    -userId: String
+    -name: String
+    -parameters: Map<String, String>
+    -createdAt: LocalDateTime
+    +updateName(name: String): void
+    +updateParameters(params: Map<String, String>): void
+  }
+
+  class QuickActionResult <<ValueObject>> COMPONENT_COLOR {
+    +actionId: String
+    +status: ActionStatus
+    +output: String
+    +executedAt: LocalDateTime
+  }
+
+  enum ActionStatus <<Enum>> COMPONENT_COLOR {
+    SUCCESS
+    FAILURE
+    PENDING
+  }
+
+  interface QuickActionRepository <<Repository>> REPOSITORY_COLOR {
+    +findByUserId(userId: String): List<QuickAction>
+    +save(action: QuickAction): QuickAction
+    +delete(actionId: String): void
+  }
+
+}
+
+' Relationships
+WidgetController --> WidgetRepository : uses
+QuickActionService --> QuickActionRepository : uses
+QuickActionService --> QuickAction : manages
+@enduml

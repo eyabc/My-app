@@ -1,0 +1,51 @@
+@startuml VoiceCommandHandlingFlow
+|User|
+start
+:Invoke speech recognition (audioData);
+|VoiceCommandApplicationService|
+:handleIncomingVoice(userId, audioData);
+|SpeechRecognitionService|
+:startRecognitionSession();
+:recognize(audioData) → rawText;
+:stopRecognitionSession();
+|VoiceCommandProcessor|
+:parseIntent(rawText) → intent;
+:extractParameters(rawText) → params;
+:process(rawText, userId) → resultData;
+|VoiceCommandRepository|
+:save(command with rawText, intent, params);
+|VoiceCommandApplicationService|
+:return VoiceCommandResult to User;
+stop
+@enduml
+
+@startuml VoiceCommandQueryFlow
+|User|
+start
+:Request getUserVoiceCommands(userId, startDateTime, endDateTime);
+|VoiceCommandApplicationService|
+:getUserVoiceCommands(userId, startDateTime, endDateTime);
+|VoiceCommandRepository|
+:findByUserId(userId) → commands;
+|VoiceCommandProcessor|
+:filter by date range;
+|VoiceCommandApplicationService|
+:return list of VoiceCommand;
+stop
+@enduml
+
+@startuml VoiceCommandStatsFlow
+|User|
+start
+:Request getVoiceCommandStats(userId, startDateTime, endDateTime);
+|VoiceCommandApplicationService|
+:getVoiceCommandStats(userId, startDateTime, endDateTime);
+|VoiceCommandRepository|
+:findByUserId(userId) → commands;
+|VoiceCommandProcessor|
+:groupBy intent and count;
+|VoiceCommandApplicationService|
+:return Map<IntentType, Integer> to User;
+stop
+@enduml
+

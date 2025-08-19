@@ -1,0 +1,45 @@
+@startuml NotificationResultRecordingFlow
+|User|
+start
+:Trigger recordCompletion(notificationId);
+|NotificationApplicationService|
+:recordCompletion(notificationId);
+|NotificationRepository|
+:notification = findById(notificationId);
+if (notification exists and isActive?) then (yes)
+  |NotificationHistoryService|
+:recordResult(notificationId, COMPLETED, now) → result;
+  |NotificationResultRepository|
+:save(result);
+  |NotificationApplicationService|
+:return result;
+else (no)
+  |NotificationApplicationService|
+:throw NotificationNotFoundOrInactiveException;
+endif
+stop
+@enduml
+
+
+@startuml NotificationResultSkippingFlow
+|User|
+start
+:Trigger recordSkip(notificationId);
+|NotificationApplicationService|
+:recordSkip(notificationId);
+|NotificationRepository|
+:notification = findById(notificationId);
+if (notification exists and isActive?) then (yes)
+  |NotificationHistoryService|
+:recordResult(notificationId, SKIPPED, now) → result;
+  |NotificationResultRepository|
+:save(result);
+  |NotificationApplicationService|
+:return result;
+else (no)
+  |NotificationApplicationService|
+:throw NotificationNotFoundOrInactiveException;
+endif
+stop
+@enduml
+

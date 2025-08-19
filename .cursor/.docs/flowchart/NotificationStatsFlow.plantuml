@@ -1,0 +1,76 @@
+@startuml NotificationStatsFlow
+|Client|
+start
+:Request getNotificationStats(notificationId, startDateTime, endDateTime);
+|StatisticsApplicationService|
+:getNotificationStats(notificationId, startDateTime, endDateTime);
+|StatisticsService|
+:summary = calculateSummary(notificationId, null, startDateTime, endDateTime);
+|StatisticsRepository|
+:existing = findSummary(notificationId, null, startDateTime, endDateTime);
+if (existing exists?) then (yes)
+  :return existing;
+else (no)
+  :saveSummary(summary);
+  :return summary;
+endif
+|StatisticsApplicationService|
+:return summary to Client;
+stop
+@enduml
+
+@startuml UserStatsFlow
+|Client|
+start
+:Request getUserStats(userId, startDateTime, endDateTime);
+|StatisticsApplicationService|
+:getUserStats(userId, startDateTime, endDateTime);
+|StatisticsService|
+:summary = calculateSummary(null, userId, startDateTime, endDateTime);
+|StatisticsRepository|
+:existing = findSummary(null, userId, startDateTime, endDateTime);
+if (existing exists?) then (yes)
+  :return existing;
+else (no)
+  :saveSummary(summary);
+  :return summary;
+endif
+|StatisticsApplicationService|
+:return summary to Client;
+stop
+@enduml
+
+@startuml GlobalStatsFlow
+|Client|
+start
+:Request getGlobalStats(startDateTime, endDateTime);
+|StatisticsApplicationService|
+:getGlobalStats(startDateTime, endDateTime);
+|StatisticsService|
+:summary = calculateSummary(null, null, startDateTime, endDateTime);
+|StatisticsRepository|
+:existing = findSummary(null, null, startDateTime, endDateTime);
+if (existing exists?) then (yes)
+  :return existing;
+else (no)
+  :saveSummary(summary);
+  :return summary;
+endif
+|StatisticsApplicationService|
+:return summary to Client;
+stop
+@enduml
+
+@startuml NotificationTimeSeriesFlow
+|Client|
+start
+:Request getNotificationTimeSeries(notificationId, startDateTime, endDateTime, granularity);
+|StatisticsApplicationService|
+:getNotificationTimeSeries(notificationId, startDateTime, endDateTime, granularity);
+|StatisticsService|
+:timeSeries = getTimeSeries(notificationId, startDateTime, endDateTime, granularity);
+|StatisticsApplicationService|
+:return timeSeries to Client;
+stop
+@enduml
+

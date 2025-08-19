@@ -1,0 +1,46 @@
+@startuml NotificationToggleActivationFlow
+|User|
+start
+:Submit toggleActivation(notificationId, active);
+|NotificationApplicationService|
+:toggleActivation(notificationId, active);
+|NotificationRepository|
+:notification = findById(notificationId);
+if (notification exists and not deleted?) then (yes)
+  |Notification|
+  if (active) then (true)
+    :notification.activate();
+  else (false)
+    :notification.deactivate();
+  endif
+  |NotificationRepository|
+  :save(notification);
+  if (active) then (true)
+    |SchedulerService|
+    :scheduleTask(
+      taskId = generateId(),
+      notificationId = notification.notificationId,
+      pattern = notification.recurrence,
+      nextRunAt = calculateNextRun(notification)
+    );
+    |ScheduleRepository|
+    :save(task);
+  else (false)
+    |ScheduleRepository|
+    :task = findByNotificationId(notification.notificationId);
+    if (task exists?) then (yes)
+      |SchedulerService|
+      :cancelTask(task.taskId);
+      |ScheduleRepository|
+      :delete(task.taskId);
+    endif
+  endif
+  |NotificationApplicationService|
+  :return notification;
+else (no)
+  |NotificationApplicationService|
+  :throw NotificationNotFoundException;
+endif
+stop
+@enduml
+

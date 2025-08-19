@@ -1,0 +1,110 @@
+@startuml NotificationDomain_Split
+
+!define ENTITY_COLOR #FFF9C4
+!define VALUE_OBJECT_COLOR #E1F5FE
+!define SERVICE_COLOR #E8F5E8
+!define REPOSITORY_COLOR #FFF3E0
+
+package "Notification Domain" {
+
+  entity Notification <<Entity>> ENTITY_COLOR {
+    -notificationId: String
+    -userId: String
+    -message: String
+    -startDateTime: LocalDateTime
+    -endDateTime: LocalDateTime?
+    -recurrence: RecurrencePattern
+    -isActive: Boolean
+    -isDeleted: Boolean
+    +activate(): void
+    +deactivate(): void
+    +markDeleted(): void
+    +validateSchedule(): void
+    +addResult(result: NotificationResult): void
+    +getResultsBetween(start: LocalDateTime, end: LocalDateTime): List<NotificationResult>
+    +update(message, schedule, recurrence, active): void
+  }
+
+  class RecurrencePattern <<ValueObject>> VALUE_OBJECT_COLOR {
+    +type: RecurrenceType
+    +interval: Integer?
+    +daysOfWeek: List<DayOfWeek>?
+    +durationStartTime: LocalTime
+    +durationEndTime: LocalTime
+    +exceptions: List<LocalDate>?
+    +validate(): void
+  }
+
+  enum RecurrenceType <<Enum>> VALUE_OBJECT_COLOR {
+    NONE
+    DAILY
+    WEEKLY
+    MONTHLY
+    CUSTOM
+  }
+
+  entity NotificationResult <<Entity>> ENTITY_COLOR {
+    -resultId: String
+    -notificationId: String
+    -triggeredAt: LocalDateTime
+    -status: ResultStatus
+    -respondedAt: LocalDateTime?
+    +markCompleted(respondedAt: LocalDateTime): void
+    +markSkipped(respondedAt: LocalDateTime): void
+  }
+
+  enum ResultStatus <<Enum>> VALUE_OBJECT_COLOR {
+    COMPLETED
+    SKIPPED
+  }
+
+  interface NotificationRepository <<Repository>> REPOSITORY_COLOR {
+    +findById(id: String): Notification?
+    +findAllByUser(userId: String): List<Notification>
+    +save(notification: Notification): Notification
+    +softDelete(id: String): void
+  }
+
+  interface NotificationResultRepository <<Repository>> REPOSITORY_COLOR {
+    +findByNotificationId(id: String): List<NotificationResult>
+    +findByNotificationIdAndPeriod(id: String, start: LocalDateTime, end: LocalDateTime): List<NotificationResult>
+    +save(result: NotificationResult): NotificationResult
+  }
+
+  class NotificationApplicationService <<ApplicationService>> SERVICE_COLOR {
+    -repo: NotificationRepository
+    -resultRepo: NotificationResultRepository
+    +createNotification(cmd: CreateNotificationCommand): Notification
+    +updateNotification(cmd: UpdateNotificationCommand): Notification
+    +deleteNotification(id: String): void
+    +toggleActivation(id: String, active: Boolean): void
+    +recordCompletion(notificationId: String): NotificationResult
+    +recordSkip(notificationId: String): NotificationResult
+  }
+
+  class CreateNotificationCommand <<DTO>> VALUE_OBJECT_COLOR {
+    +userId: String
+    +message: String
+    +startDateTime: LocalDateTime
+    +endDateTime: LocalDateTime?
+    +recurrence: RecurrencePattern
+  }
+
+  class UpdateNotificationCommand <<DTO>> VALUE_OBJECT_COLOR {
+    +notificationId: String
+    +message: String?
+    +startDateTime: LocalDateTime?
+    +endDateTime: LocalDateTime?
+    +recurrence: RecurrencePattern?
+    +isActive: Boolean?
+  }
+}
+
+' Relationships
+Notification *-- RecurrencePattern
+Notification "1" --o "*" NotificationResult
+NotificationApplicationService --> NotificationRepository : uses
+NotificationApplicationService --> NotificationResultRepository : uses
+NotificationRepository ..> Notification
+NotificationResultRepository ..> NotificationResult
+@enduml

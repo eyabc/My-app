@@ -1,0 +1,62 @@
+@startuml WidgetLoadFlow
+|User|
+start
+:navigateTo(WIDGET_CONFIGURATION);
+|WidgetController|
+:loadWidgets(userId) → configs;
+|WidgetRepository|
+:findByUserId(userId) → configs;
+|WidgetComponent|
+:render(configs);
+stop
+@enduml
+
+@startuml WidgetUpdateFlow
+|User|
+start
+:updateWidgetConfig(config);
+|WidgetController|
+:updateWidgetConfig(config);
+|WidgetRepository|
+:save(config);
+|WidgetController|
+:refreshWidget(config.widgetId);
+|WidgetRepository|
+:loadConfig(config.widgetId) → updatedConfig;
+|WidgetComponent|
+:update(updatedConfig);
+stop
+@enduml
+
+@startuml WidgetDeleteFlow
+|User|
+start
+:deleteWidget(widgetId);
+|WidgetController|
+:deleteWidget(widgetId);
+|WidgetRepository|
+:delete(widgetId);
+|WidgetController|
+:loadWidgets(userId) → configs;
+|WidgetComponent|
+:render(configs);
+stop
+@enduml
+
+@startuml QuickActionExecutionFlow
+|User|
+start
+:select QuickAction(actionId) with params;
+|QuickActionService|
+:executeAction(actionId, params) → result;
+|QuickActionRepository|
+:findByUserId(userId) → actions;
+|QuickActionService|
+:registerAction if needed;
+|QuickActionResult|
+:execute and return result;
+|QuickActionService|
+:return result to User;
+stop
+@enduml
+

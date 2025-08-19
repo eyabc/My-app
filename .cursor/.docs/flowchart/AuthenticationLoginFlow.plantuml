@@ -1,0 +1,38 @@
+@startuml ExtendedAuthenticationLoginFlow
+|User|
+start
+:Input providerType (GOOGLE/APPLE/NAVER/etc), credentials, deviceInfo;
+|AuthApplicationService|
+:login(providerType, credentials, deviceInfo);
+|AuthenticationService|
+:authenticate(providerType, credentials, deviceInfo);
+|AuthProviderFactory|
+if (providerType registered?) then (yes)
+  :provider = getProvider(providerType);
+else (no)
+  :throw UnsupportedProviderException;
+  stop
+endif
+|AuthProvider Interface|
+:provider.authenticate(credentials) → SessionInfo;
+note right: Actually implemented by GoogleAuthProvider, AppleAuthProvider, etc.
+|AuthenticationService|
+:Create AuthSession entity (sessionInfo + deviceInfo);
+|AuthSessionRepository|
+:save(AuthSession);
+|UserRepository|
+:user = findByUserId(session.userId);
+if (user exists and not deleted?) then (yes)
+  :user.updateLastLogin();
+  :save(user);
+else if (user deleted?) then (deleted)
+  :throw DeletedUserException;
+  stop
+else (no)
+  :create new User;
+  :save(user);
+endif
+|AuthApplicationService|
+:return AuthSession;
+stop
+@enduml

@@ -1,0 +1,120 @@
+@startuml ExtendedAuthDomainWithFactory_SoftDelete_Updated
+
+!define INTERFACE_COLOR #E0E0E0
+!define ENTITY_COLOR #E1F5FE
+!define VALUE_OBJECT_COLOR #F3E5F5
+!define SERVICE_COLOR #E8F5E8
+!define REPOSITORY_COLOR #FFF3E0
+!define INFRA_COLOR #FFE0B2
+
+package "Authentication Domain" {
+
+  interface AuthProvider<Credentials, UserInfo> <<Interface>> INTERFACE_COLOR {
+    +authenticate(credentials): SessionInfo
+    +getUserInfo(sessionToken): UserInfo
+    +refresh(sessionToken): SessionInfo
+    +revoke(sessionToken): void
+  }
+
+  enum AuthProviderType <<Enum>> #INTERFACE_COLOR {
+    GOOGLE
+    APPLE
+    NAVER
+    KAKAO
+    FACEBOOK
+    EMAIL
+    SMS
+  }
+
+  class AuthProviderFactory <<Factory>> SERVICE_COLOR {
+    -providers: Map<AuthProviderType, AuthProvider>
+    +register(type: AuthProviderType, provider: AuthProvider): void
+    +getProvider(type: AuthProviderType): AuthProvider
+  }
+
+  class GoogleAuthProvider <<AuthProvider>> INFRA_COLOR {
+    +authenticate(credentials): SessionInfo
+    +getUserInfo(token): UserInfo
+    +refresh(token): SessionInfo
+    +revoke(token): void
+  }
+  class AppleAuthProvider <<AuthProvider>> INFRA_COLOR {}
+  class NaverAuthProvider <<AuthProvider>> INFRA_COLOR {}
+  class KakaoAuthProvider <<AuthProvider>> INFRA_COLOR {}
+  class FacebookAuthProvider <<AuthProvider>> INFRA_COLOR {}
+  class EmailAuthProvider <<AuthProvider>> INFRA_COLOR {}
+  class SmsAuthProvider <<AuthProvider>> INFRA_COLOR {}
+
+  class User <<Entity>> ENTITY_COLOR {
+    -userId: String
+    -email: String
+    -name: String
+    -profilePictureUrl: String?
+    -isDeleted: Boolean
+    +updateLastLogin(): void
+    +markDeleted(): void
+  }
+
+  class AuthSession <<Entity>> ENTITY_COLOR {
+    -sessionId: String
+    -userId: String
+    -sessionToken: String
+    -refreshToken: String
+    -expiresAt: DateTime
+    -deviceInfo: DeviceFingerprint
+    +invalidate(): void
+  }
+
+  class SessionInfo <<ValueObject>> VALUE_OBJECT_COLOR {
+    +sessionToken: String
+    +refreshToken: String
+    +expiresIn: Integer
+  }
+
+  class DeviceFingerprint <<ValueObject>> VALUE_OBJECT_COLOR {
+    +platform: String
+    +deviceId: String
+    +appVersion: String
+    +osVersion: String
+  }
+
+  class AuthenticationService <<DomainService>> SERVICE_COLOR {
+    -providerFactory: AuthProviderFactory
+    -userRepo: UserRepository
+    -sessionRepo: AuthSessionRepository
+    +authenticate(type: AuthProviderType, credentials, deviceInfo): AuthSession
+    +refreshSession(sessionId): AuthSession
+    +logout(sessionId): void
+    +deleteUser(userId: String): void
+  }
+
+  class AuthApplicationService <<ApplicationService>> SERVICE_COLOR {
+    -authService: AuthenticationService
+    +login(providerType, credentials, deviceInfo): AuthSession
+    +logout(sessionId): void
+    +checkAuthenticationStatus(sessionId): Boolean
+    +deleteUser(userId: String): void
+  }
+
+  interface UserRepository <<Repository>> REPOSITORY_COLOR {
+    +findByUserId(id): User?
+    +save(user): User
+    +softDelete(id): void
+  }
+  interface AuthSessionRepository <<Repository>> REPOSITORY_COLOR {
+    +findBySessionId(id): AuthSession?
+    +save(session): AuthSession
+  }
+
+}
+
+' Relationships
+AuthProviderFactory --> AuthProvider : registers/returns
+AuthenticationService --> AuthProviderFactory : uses
+AuthApplicationService --> AuthenticationService : uses
+AuthenticationService --> AuthSessionRepository : uses
+AuthenticationService --> UserRepository : uses
+User "1" --o "*" AuthSession : has sessions
+AuthSession *-- DeviceFingerprint
+AuthSession *-- SessionInfo
+@enduml

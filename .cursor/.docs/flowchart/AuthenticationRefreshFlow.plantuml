@@ -1,0 +1,28 @@
+@startuml ExtendedAuthenticationRefreshFlow
+|User|
+start
+:Provide sessionId (with valid refresh token);
+|AuthApplicationService|
+:checkAuthenticationStatus(sessionId);
+|AuthenticationService|
+:refreshSession(sessionId);
+|AuthSessionRepository|
+:session = findBySessionId(sessionId);
+if (session exists and not deleted?) then (yes)
+  |AuthProviderFactory|
+  :provider = getProvider(session.providerType);
+  |AuthProvider Interface|
+  :newSessionInfo = provider.refresh(session.refreshToken);
+  |AuthenticationService|
+  :session.updateTokens(newSessionInfo);
+  :session.expiresAt = now + newSessionInfo.expiresIn;
+  |AuthSessionRepository|
+  :save(session);
+  |AuthApplicationService|
+  :return updated AuthSession;
+else (no)
+  |AuthApplicationService|
+  :throw AuthenticationException;
+endif
+stop
+@enduml

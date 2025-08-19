@@ -1,0 +1,30 @@
+@startuml NotificationDeletionFlow
+|User|
+start
+:Submit deleteNotification(notificationId);
+|NotificationApplicationService|
+:deleteNotification(notificationId);
+|NotificationRepository|
+:notification = findById(notificationId);
+if (notification exists and not deleted?) then (yes)
+  |Notification|
+  :markDeleted();
+  |NotificationRepository|
+  :softDelete(notificationId);
+  |ScheduleRepository|
+  :task = findByNotificationId(notificationId);
+  if (task exists?) then (yes)
+    |SchedulerService|
+    :cancelTask(task.taskId);
+    |ScheduleRepository|
+    :delete(task.taskId);
+  endif
+  |NotificationApplicationService|
+  :return success;
+else (no)
+  |NotificationApplicationService|
+  :throw NotificationNotFoundException;
+endif
+stop
+@enduml
+

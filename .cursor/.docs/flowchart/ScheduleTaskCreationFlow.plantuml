@@ -1,0 +1,69 @@
+@startuml ScheduleTaskCreationFlow
+|User|
+start
+:Request scheduleTask(cmd);
+|SchedulerService|
+:scheduleTask(task);
+|ScheduleTask|
+:validate pattern;
+:calculateNextRun();
+|ScheduleRepository|
+:save(task);
+|SchedulerService|
+:return success;
+stop
+@enduml
+
+@startuml ScheduleTaskRescheduleFlow
+|System|
+start
+:trigger rescheduleTask(taskId);
+|ScheduleRepository|
+:task = findByNotificationId(notificationId);
+if (task exists?) then (yes)
+  |SchedulerService|
+  :rescheduleTask(task);
+  :task.calculateNextRun();
+  |ScheduleRepository|
+  :save(task);
+  |SchedulerService|
+  :return success;
+else (no)
+  |SchedulerService|
+  :throw TaskNotFoundException;
+endif
+stop
+@enduml
+
+@startuml ScheduleTaskCancellationFlow
+|User|
+start
+:Request cancelTask(taskId);
+|SchedulerService|
+:cancelTask(taskId);
+|ScheduleRepository|
+:delete(taskId);
+|SchedulerService|
+:return success;
+stop
+@enduml
+
+@startuml ExecuteDueTasksFlow
+|Scheduler|
+start
+:invoke executeDueTasks();
+|ScheduleRepository|
+:dueTasks = findDueTasks(now);
+|SchedulerService|
+:for each task in dueTasks;
+:execute notification trigger logic;
+:task.calculateNextRun();
+|ScheduleRepository|
+:save(task);
+|SchedulerService|
+:end loop;
+|Scheduler|
+:return executionSummary;
+stop
+@enduml
+

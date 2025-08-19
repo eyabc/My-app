@@ -1,0 +1,36 @@
+@startuml ExtendedAuthenticationDeleteUserFlow
+|User|
+start
+:Request deleteUser(userId);
+|AuthApplicationService|
+:deleteUser(userId);
+|AuthenticationService|
+:deleteUser(userId);
+|UserRepository|
+:user = findByUserId(userId);
+if (user exists and not deleted?) then (yes)
+  |User|
+  :markDeleted();
+  |UserRepository|
+  :softDelete(userId);
+  |AuthenticationService|
+  :sessions = sessionRepo.findByUserId(userId);
+  partition "Invalidate Sessions" {
+    :for each session in sessions;
+    |AuthenticationService|
+    :session.invalidate();
+    |AuthSessionRepository|
+    :save(session);
+    |AuthProviderFactory|
+    :provider = getProvider(session.providerType);
+    |AuthProvider Interface|
+    :provider.revoke(session.sessionToken);
+  }
+  |AuthApplicationService|
+  :return success;
+else (no)
+  |AuthApplicationService|
+  :throw UserNotFoundException;
+endif
+stop
+@enduml

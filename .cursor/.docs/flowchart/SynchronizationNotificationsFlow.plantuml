@@ -1,0 +1,29 @@
+@startuml SynchronizationNotificationsFlow
+|Client|
+start
+:Request syncNotifications(userId);
+|SyncService|
+:pullRemoteChanges(userId);
+:pushLocalChanges(userId);
+:resolveConflicts(userId, conflicts);
+|SyncRepository|
+:saveNotificationSyncData(userId, data);
+|SyncService|
+:return success;
+stop
+@enduml
+
+@startuml SynchronizationSettingsFlow
+|Client|
+start
+:Request syncSettings(userId);
+|SyncService|
+:pullRemoteChanges(userId);
+:pushLocalChanges(userId);
+|SyncRepository|
+:saveSettingsSyncData(userId, data);
+|SyncService|
+:return success;
+stop
+@enduml
+

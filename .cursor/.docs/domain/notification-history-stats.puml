@@ -1,0 +1,107 @@
+@startuml NotificationHistoryAndStatsDomain
+
+!define ENTITY_COLOR #FFF3E0
+!define VALUE_OBJECT_COLOR #E1F5FE
+!define SERVICE_COLOR #E8F5E8
+!define REPOSITORY_COLOR #FFF9C4
+!define INFRA_COLOR #FFE0B2
+
+package "Notification History & Statistics Domain" {
+
+  entity NotificationRecord <<Entity>> ENTITY_COLOR {
+    -recordId: String
+    -notificationId: String
+    -userId: String
+    -triggeredAt: LocalDateTime
+    -status: ResultStatus
+    -respondedAt: LocalDateTime?
+    -responseDelay: Duration?
+    -notes: String?
+    +markCompleted(respondedAt: LocalDateTime): void
+    +markSkipped(respondedAt: LocalDateTime): void
+  }
+
+  enum ResultStatus <<Enum>> VALUE_OBJECT_COLOR {
+    COMPLETED
+    SKIPPED
+  }
+
+  class StatisticsSummary <<ValueObject>> VALUE_OBJECT_COLOR {
+    +notificationId: String?
+    +userId: String?
+    +periodStart: LocalDateTime
+    +periodEnd: LocalDateTime
+    +totalTriggers: Integer
+    +completedCount: Integer
+    +skippedCount: Integer
+    +completionRate: Double
+    +averageResponseTime: Duration
+    +timeSeries: List<TimeSeriesPoint>
+  }
+
+  class TimeSeriesPoint <<ValueObject>> VALUE_OBJECT_COLOR {
+    +timestamp: LocalDateTime
+    +value: Double
+  }
+
+  interface HistoryRepository <<Repository>> REPOSITORY_COLOR {
+    +findByNotificationId(notificationId: String): List<NotificationRecord>
+    +findByUserId(userId: String, start: LocalDateTime, end: LocalDateTime): List<NotificationRecord>
+    +findRecords(filters: RecordFilter): List<NotificationRecord>
+    +deleteOldRecords(before: LocalDateTime): void
+  }
+
+  interface StatisticsRepository <<Repository>> REPOSITORY_COLOR {
+    +findSummary(notificationId: String, userId: String, start: LocalDateTime, end: LocalDateTime): StatisticsSummary?
+    +saveSummary(summary: StatisticsSummary): void
+  }
+
+  class HistoryService <<DomainService>> SERVICE_COLOR {
+    +getRecords(filters: RecordFilter): List<NotificationRecord>
+    +deleteOldRecords(before: LocalDateTime): void
+  }
+
+  class StatisticsService <<DomainService>> SERVICE_COLOR {
+    +calculateSummary(notificationId: String?, userId: String?, start: LocalDateTime, end: LocalDateTime): StatisticsSummary
+    +getTimeSeries(notificationId: String, start: LocalDateTime, end: LocalDateTime, granularity: Granularity): List<TimeSeriesPoint>
+  }
+
+  class HistoryApplicationService <<ApplicationService>> SERVICE_COLOR {
+    +getNotificationHistory(notificationId: String, start: LocalDateTime, end: LocalDateTime): List<NotificationRecord>
+    +getUserHistory(userId: String, start: LocalDateTime, end: LocalDateTime): List<NotificationRecord>
+  }
+
+  class StatisticsApplicationService <<ApplicationService>> SERVICE_COLOR {
+    +getNotificationStats(notificationId: String, start: LocalDateTime, end: LocalDateTime): StatisticsSummary
+    +getUserStats(userId: String, start: LocalDateTime, end: LocalDateTime): StatisticsSummary
+    +getGlobalStats(start: LocalDateTime, end: LocalDateTime): StatisticsSummary
+    +getNotificationTimeSeries(notificationId: String, start: LocalDateTime, end: LocalDateTime, granularity: Granularity): List<TimeSeriesPoint>
+  }
+
+  class RecordFilter <<DTO>> INFRA_COLOR {
+    +notificationId: String?
+    +userId: String?
+    +status: ResultStatus?
+    +start: LocalDateTime
+    +end: LocalDateTime
+  }
+
+  enum Granularity <<Enum>> INFRA_COLOR {
+    HOURLY
+    DAILY
+    WEEKLY
+    MONTHLY
+  }
+
+  ' Relationships
+  NotificationRecord }o-- ResultStatus
+  StatisticsSummary *-- TimeSeriesPoint
+  HistoryApplicationService --> HistoryService : uses
+  HistoryService --> HistoryRepository : uses
+  StatisticsApplicationService --> StatisticsService : uses
+  StatisticsService --> StatisticsRepository : uses
+  StatisticsService --> HistoryRepository : uses
+
+}
+
+@enduml

@@ -1,0 +1,27 @@
+@startuml ExtendedAuthenticationLogoutFlow
+|User|
+start
+:Initiate logout (sessionId);
+|AuthApplicationService|
+:logout(sessionId);
+|AuthenticationService|
+:logout(sessionId);
+|AuthSessionRepository|
+:session = findBySessionId(sessionId);
+if (session exists and not deleted?) then (yes)
+  |AuthenticationService|
+  :session.invalidate();
+  |AuthSessionRepository|
+  :save(session);
+  |AuthProviderFactory|
+  :provider = getProvider(session.providerType);
+  |AuthProvider Interface|
+  :provider.revoke(session.sessionToken);
+  |AuthApplicationService|
+  :return success;
+else (no)
+  |AuthApplicationService|
+  :throw SessionNotFoundException;
+endif
+stop
+@enduml

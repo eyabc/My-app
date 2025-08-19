@@ -1,0 +1,36 @@
+@startuml NotificationHistoryQueryFlow
+|Client|
+start
+:Request getNotificationHistory(notificationId, startDateTime, endDateTime);
+|HistoryApplicationService|
+:getNotificationHistory(notificationId, startDateTime, endDateTime);
+|HistoryService|
+:filters = RecordFilter(notificationId, null, null, startDateTime, endDateTime);
+:getRecords(filters) → records;
+|HistoryRepository|
+:findRecords(filters) → records;
+|HistoryService|
+:return records;
+|HistoryApplicationService|
+:return records to Client;
+stop
+@enduml
+
+@startuml UserHistoryQueryFlow
+|Client|
+start
+:Request getUserHistory(userId, startDateTime, endDateTime);
+|HistoryApplicationService|
+:getUserHistory(userId, startDateTime, endDateTime);
+|HistoryService|
+:filters = RecordFilter(null, userId, null, startDateTime, endDateTime);
+:getRecords(filters) → records;
+|HistoryRepository|
+:findRecords(filters) → records;
+|HistoryService|
+:return records;
+|HistoryApplicationService|
+:return records to Client;
+stop
+@enduml
+

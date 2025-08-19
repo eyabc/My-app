@@ -1,0 +1,98 @@
+@startuml UIUXDomain
+
+!define CONTROLLER_COLOR #E8EAF6
+!define COMPONENT_COLOR #F3E5F5
+!define SERVICE_COLOR #E8F5E8
+!define REPOSITORY_COLOR #FFF3E0
+
+package "User Interface Domain" {
+
+  class ScreenController <<Controller>> CONTROLLER_COLOR {
+    -currentScreen: ScreenType
+    -navigationStack: Stack<ScreenType>
+    +navigateTo(screen: ScreenType): void
+    +goBack(): void
+    +refresh(): void
+    +handleInput(event: UIEvent): void
+  }
+
+  enum ScreenType <<Enum>> COMPONENT_COLOR {
+    NOTIFICATION_LIST
+    NOTIFICATION_DETAIL
+    CREATE_NOTIFICATION
+    SETTINGS
+    WIDGET_CONFIGURATION
+  }
+
+  interface UIComponent <<Component>> COMPONENT_COLOR {
+    +render(): void
+    +update(state: UIState): void
+    +handleEvent(event: UIEvent): void
+  }
+
+  class NotificationListComponent <<Component>> COMPONENT_COLOR {
+    +render(): void
+    +update(list: List<Notification>): void
+    +handleEvent(event: UIEvent): void
+  }
+
+  class NotificationFormComponent <<Component>> COMPONENT_COLOR {
+    +render(): void
+    +update(notification: Notification): void
+    +handleEvent(event: UIEvent): void
+  }
+
+  class WidgetComponent <<Component>> COMPONENT_COLOR {
+    +render(): void
+    +update(config: WidgetConfig): void
+    +handleEvent(event: UIEvent): void
+  }
+
+  class ThemeManager <<DomainService>> SERVICE_COLOR {
+    -currentTheme: ThemeType
+    -accessibilityOptions: AccessibilitySettings
+    +applyTheme(theme: ThemeType): void
+    +toggleOption(option: AccessibilityOption): void
+    +getCurrentSettings(): AccessibilitySettings
+  }
+
+  enum ThemeType <<Enum>> COMPONENT_COLOR {
+    LIGHT
+    DARK
+    SYSTEM_DEFAULT
+  }
+
+  class AccessibilitySettings <<ValueObject>> COMPONENT_COLOR {
+    +fontSize: Integer
+    +highContrast: Boolean
+    +screenReaderEnabled: Boolean
+  }
+
+  class WidgetConfig <<ValueObject>> COMPONENT_COLOR {
+    +widgetId: String
+    +layout: String
+    +refreshInterval: Duration
+  }
+
+  interface ThemeRepository <<Repository>> REPOSITORY_COLOR {
+    +saveSettings(settings: AccessibilitySettings): void
+    +loadSettings(): AccessibilitySettings
+  }
+
+  interface WidgetRepository <<Repository>> REPOSITORY_COLOR {
+    +saveConfig(config: WidgetConfig): void
+    +loadConfig(widgetId: String): WidgetConfig
+  }
+
+}
+
+' Relationships
+ScreenController --> UIComponent : manages
+UIComponent <|.. NotificationListComponent
+UIComponent <|.. NotificationFormComponent
+UIComponent <|.. WidgetComponent
+ScreenController --> ScreenType
+ThemeManager --> AccessibilitySettings
+ThemeRepository ..> AccessibilitySettings
+WidgetRepository ..> WidgetConfig
+@enduml

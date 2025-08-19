@@ -1,0 +1,29 @@
+@startuml NotificationCreationFlow
+|User|
+start
+:Submit CreateNotificationCommand(cmd);
+|NotificationApplicationService|
+:createNotification(cmd);
+|Notification|
+:validateSchedule();
+if (valid?) then (yes)
+  :newNotification = Notification(cmd);
+else (no)
+  :throw InvalidScheduleException;
+  stop
+endif
+|NotificationRepository|
+:save(newNotification);
+|SchedulerService|
+:scheduleTask(
+  taskId = generateId(),
+  notificationId = newNotification.notificationId,
+  pattern = newNotification.recurrence,
+  nextRunAt = calculateFirstRun(newNotification)
+);
+|ScheduleRepository|
+:save(task);
+|NotificationApplicationService|
+:return newNotification;
+stop
+@enduml
